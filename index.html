@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Interactive Todo & Task Manager with Calendar Assignment and SMTP Email Reminders">
+  <title>TaskPulse - Todo & Calendar with SMTP Reminders</title>
+  <!-- Google Fonts & Font Awesome Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- SMTPJS CDN for direct browser SMTP delivery -->
+  <script src="https://smtpjs.com/v3/smtp.js"></script>
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dark-theme">
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="logo-icon">
+          <i class="fa-solid fa-calendar-check"></i>
+        </div>
+        <div class="brand-text">
+          <h2>TaskPulse</h2>
+          <span>Smart Todo & Calendar</span>
+        </div>
+        <button class="close-sidebar-btn" id="closeSidebarBtn">&times;</button>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-item active" data-view="dashboard">
+          <i class="fa-solid fa-border-all"></i> Dashboard
+        </button>
+        <button class="nav-item" data-view="tasks">
+          <i class="fa-solid fa-list-check"></i> My Tasks
+          <span class="badge-count" id="taskCountBadge">0</span>
+        </button>
+        <button class="nav-item" data-view="calendar">
+          <i class="fa-regular fa-calendar-days"></i> Calendar View
+        </button>
+        <button class="nav-item" data-view="analytics">
+          <i class="fa-solid fa-chart-pie"></i> Analytics
+        </button>
+      </nav>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="categories-section">
+        <div class="section-title">
+          <span>Categories</span>
+          <button id="addCategoryBtn" title="Add Category"><i class="fa-solid fa-plus"></i></button>
+        </div>
+        <div class="category-list" id="categoryList">
+          <!-- Categories rendered via JS -->
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <button id="smtpConfigBtn" class="btn-smtp-config">
+          <i class="fa-solid fa-paper-plane"></i>
+          <span>SMTP Reminders</span>
+          <div class="status-dot" id="smtpStatusDot" title="SMTP Not Configured"></div>
+        </button>
+        <div class="theme-toggle-container">
+          <i class="fa-solid fa-moon"></i>
+          <span class="theme-text">Dark Mode</span>
+          <label class="switch">
+            <input type="checkbox" id="themeToggle" checked>
+            <span class="slider round"></span>
+          </label>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Header Bar -->
+      <header class="top-header">
+        <div class="header-left">
+          <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle Sidebar Menu">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <div>
+            <h1 id="pageTitle">Dashboard</h1>
+            <p id="pageSubtitle" class="text-muted">Welcome back! Here's an overview of your schedule.</p>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="searchInput" placeholder="Search tasks, tags...">
+          </div>
+
+          <button id="quickAddTaskBtn" class="btn-primary">
+            <i class="fa-solid fa-plus"></i> New Task
+          </button>
+        </div>
+      </header>
+
+      <!-- View Container -->
+      <div class="view-content">
+
+        <!-- DASHBOARD VIEW -->
+        <section id="dashboardView" class="view-section active">
+          <!-- Summary Cards -->
+          <div class="stats-grid">
+            <div class="stat-card blue">
+              <div class="stat-icon"><i class="fa-solid fa-tasks"></i></div>
+              <div class="stat-details">
+                <span class="stat-label">Total Tasks</span>
+                <h3 id="statTotal">0</h3>
+              </div>
+            </div>
+            <div class="stat-card green">
+              <div class="stat-icon"><i class="fa-solid fa-circle-check"></i></div>
+              <div class="stat-details">
+                <span class="stat-label">Completed</span>
+                <h3 id="statCompleted">0</h3>
+              </div>
+            </div>
+            <div class="stat-card orange">
+              <div class="stat-icon"><i class="fa-solid fa-clock"></i></div>
+              <div class="stat-details">
+                <span class="stat-label">Pending</span>
+                <h3 id="statPending">0</h3>
+              </div>
+            </div>
+            <div class="stat-card red">
+              <div class="stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+              <div class="stat-details">
+                <span class="stat-label">Overdue</span>
+                <h3 id="statOverdue">0</h3>
+              </div>
+            </div>
+          </div>
+
+          <div class="dashboard-layout">
+            <!-- Today's & Upcoming Tasks -->
+            <div class="panel main-panel">
+              <div class="panel-header">
+                <h3><i class="fa-solid fa-calendar-day"></i> Today's Schedule</h3>
+                <div class="filter-pills" id="dashboardFilterPills">
+                  <button class="pill active" data-filter="all">All</button>
+                  <button class="pill" data-filter="today">Today</button>
+                  <button class="pill" data-filter="upcoming">Upcoming</button>
+                  <button class="pill" data-filter="high">High Priority</button>
+                </div>
+              </div>
+              <div class="task-list" id="dashboardTaskList">
+                <!-- Task Items Rendered Here -->
+              </div>
+            </div>
+
+            <!-- Mini Calendar Preview & SMTP Status Card -->
+            <div class="panel side-panel">
+              <div class="mini-calendar-widget">
+                <div class="widget-header">
+                  <h4 id="miniCalMonthYear">August 2026</h4>
+                  <button class="btn-text" id="goToFullCalendar">View Full <i class="fa-solid fa-arrow-right"></i></button>
+                </div>
+                <div class="mini-calendar-grid" id="miniCalendarGrid">
+                  <!-- Mini calendar grid -->
+                </div>
+              </div>
+
+              <div class="smtp-status-card">
+                <div class="smtp-card-icon">
+                  <i class="fa-solid fa-envelope-circle-check"></i>
+                </div>
+                <div class="smtp-card-info">
+                  <h4>SMTP Mail Reminders</h4>
+                  <p id="smtpStatusText">Configure your email credentials to get automated email alerts before deadlines.</p>
+                </div>
+                <button class="btn-secondary btn-sm" id="smtpConfigureQuickBtn">
+                  <i class="fa-solid fa-gear"></i> Setup SMTP
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TASKS LIST VIEW -->
+        <section id="tasksView" class="view-section">
+          <div class="tasks-toolbar">
+            <div class="toolbar-left">
+              <div class="select-wrapper">
+                <label><i class="fa-solid fa-filter"></i> Category:</label>
+                <select id="taskCategoryFilter">
+                  <option value="all">All Categories</option>
+                </select>
+              </div>
+              <div class="select-wrapper">
+                <label><i class="fa-solid fa-flag"></i> Priority:</label>
+                <select id="taskPriorityFilter">
+                  <option value="all">All Priorities</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </div>
+              <div class="select-wrapper">
+                <label><i class="fa-solid fa-square-check"></i> Status:</label>
+                <select id="taskStatusFilter">
+                  <option value="all">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+            </div>
+            <div class="toolbar-right">
+              <span class="text-muted" id="taskListCount">Showing 0 tasks</span>
+            </div>
+          </div>
+
+          <div class="task-list full-list" id="fullTaskList">
+            <!-- Tasks list -->
+          </div>
+        </section>
+
+        <!-- CALENDAR VIEW -->
+        <section id="calendarView" class="view-section">
+          <div class="calendar-header-bar">
+            <div class="calendar-nav">
+              <button class="btn-icon" id="calPrevBtn"><i class="fa-solid fa-chevron-left"></i></button>
+              <h2 id="calendarMonthYearDisplay">August 2026</h2>
+              <button class="btn-icon" id="calNextBtn"><i class="fa-solid fa-chevron-right"></i></button>
+              <button class="btn-secondary" id="calTodayBtn">Today</button>
+            </div>
+            <div class="calendar-view-options">
+              <span class="info-text"><i class="fa-solid fa-hand-pointer"></i> Click any day cell to assign a task directly!</span>
+            </div>
+          </div>
+
+          <div class="calendar-container">
+            <div class="calendar-weekdays">
+              <div>Sun</div>
+              <div>Mon</div>
+              <div>Tue</div>
+              <div>Wed</div>
+              <div>Thu</div>
+              <div>Fri</div>
+              <div>Sat</div>
+            </div>
+            <div class="calendar-grid" id="fullCalendarGrid">
+              <!-- Calendar grid cells injected by JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ANALYTICS VIEW -->
+        <section id="analyticsView" class="view-section">
+          <div class="analytics-grid">
+            <div class="panel">
+              <h3><i class="fa-solid fa-chart-line"></i> Completion Rate</h3>
+              <div class="progress-circle-container">
+                <div class="progress-circle" id="analyticsProgressCircle">
+                  <span id="analyticsPercentage">0%</span>
+                </div>
+              </div>
+              <p class="text-center text-muted" id="analyticsProgressText">0 of 0 tasks completed</p>
+            </div>
+
+            <div class="panel">
+              <h3><i class="fa-solid fa-tags"></i> Tasks by Category</h3>
+              <div class="category-breakdown" id="categoryBreakdownList">
+                <!-- Breakdown injected here -->
+              </div>
+            </div>
+
+            <div class="panel">
+              <h3><i class="fa-solid fa-bell"></i> Scheduled Reminders</h3>
+              <div class="reminders-summary-list" id="remindersSummaryList">
+                <!-- Scheduled SMTP alerts list -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- TASK MODAL (Create & Edit) -->
+  <div class="modal-overlay" id="taskModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="taskModalTitle"><i class="fa-solid fa-plus-circle"></i> Create New Task</h3>
+        <button class="modal-close" id="closeTaskModal">&times;</button>
+      </div>
+      <form id="taskForm">
+        <input type="hidden" id="taskIdInput">
+        
+        <div class="form-group">
+          <label for="taskTitleInput">Task Title <span class="required">*</span></label>
+          <input type="text" id="taskTitleInput" placeholder="e.g. Complete Project Proposal" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="taskCategorySelect">Category</label>
+            <select id="taskCategorySelect">
+              <option value="Work">Work</option>
+              <option value="Personal">Personal</option>
+              <option value="Urgent">Urgent</option>
+              <option value="Health">Health</option>
+              <option value="Finance">Finance</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="taskPrioritySelect">Priority</label>
+            <select id="taskPrioritySelect">
+              <option value="low">Low Priority</option>
+              <option value="medium" selected>Medium Priority</option>
+              <option value="high">High Priority ⚡</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="taskDueDateInput">Due Date <span class="required">*</span></label>
+            <input type="date" id="taskDueDateInput" required>
+          </div>
+          <div class="form-group">
+            <label for="taskDueTimeInput">Due Time</label>
+            <input type="time" id="taskDueTimeInput" value="12:00">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="taskDescriptionInput">Description / Notes</label>
+          <textarea id="taskDescriptionInput" rows="3" placeholder="Add detailed instructions, links, or notes..."></textarea>
+        </div>
+
+        <!-- SMTP Email Reminder Option -->
+        <div class="reminder-option-box">
+          <div class="checkbox-wrapper">
+            <input type="checkbox" id="taskEnableReminder">
+            <label for="taskEnableReminder">
+              <i class="fa-solid fa-envelope"></i> Send Email Reminder via SMTP
+            </label>
+          </div>
+          
+          <div class="reminder-details" id="reminderDetails">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="taskReminderTimeSelect">Send Reminder:</label>
+                <select id="taskReminderTimeSelect">
+                  <option value="0">At due time</option>
+                  <option value="15" selected>15 minutes before</option>
+                  <option value="30">30 minutes before</option>
+                  <option value="60">1 hour before</option>
+                  <option value="1440">1 day before</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="taskRecipientEmail">Recipient Email ID:</label>
+                <input type="email" id="taskRecipientEmail" placeholder="your.name@example.com">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="sendModalEmailNowBtn" style="border-color: var(--accent-primary); color: var(--accent-primary);"><i class="fa-solid fa-paper-plane"></i> Send Email Now</button>
+          <button type="button" class="btn-secondary" id="cancelTaskModal">Cancel</button>
+          <button type="submit" class="btn-primary" id="saveTaskBtn"><i class="fa-solid fa-check"></i> Save Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- SMTP CONFIGURATION MODAL -->
+  <div class="modal-overlay" id="smtpModal">
+    <div class="modal-card width-md">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-paper-plane"></i> SMTP Email Reminder Settings</h3>
+        <button class="modal-close" id="closeSmtpModal">&times;</button>
+      </div>
+      
+      <div class="smtp-intro-banner">
+        <i class="fa-solid fa-shield-halved"></i>
+        <p>Configure your SMTP credentials (Gmail, Outlook, ElasticEmail, Mailtrap, or SmtpJS) so TaskPulse can automatically email you task reminders!</p>
+      </div>
+
+      <form id="smtpForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="smtpProviderSelect">Quick Provider Preset</label>
+            <select id="smtpProviderSelect">
+              <option value="custom">Custom SMTP Server</option>
+              <option value="gmail">Gmail (smtp.gmail.com)</option>
+              <option value="outlook">Outlook / Office365</option>
+              <option value="elastic">Elastic Email / SmtpJS</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="smtpSecureSelect">Security</label>
+            <select id="smtpSecureSelect">
+              <option value="true">TLS / SSL (Recommended)</option>
+              <option value="false">None / STARTTLS</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group flex-2">
+            <label for="smtpHostInput">SMTP Server Host <span class="required">*</span></label>
+            <input type="text" id="smtpHostInput" placeholder="smtp.gmail.com" required>
+          </div>
+          <div class="form-group flex-1">
+            <label for="smtpPortInput">Port <span class="required">*</span></label>
+            <input type="number" id="smtpPortInput" placeholder="587" value="587" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="smtpUserInput">SMTP Username / Email <span class="required">*</span></label>
+            <input type="text" id="smtpUserInput" value="krishnarohith417@gmail.com" placeholder="krishnarohith417@gmail.com" required>
+          </div>
+          <div class="form-group">
+            <label for="smtpPassInput">SMTP Password / Token <span class="required">*</span></label>
+            <div class="input-password-wrapper">
+              <input type="password" id="smtpPassInput" value="beblzukehtmmiitg" placeholder="App Password / Security Token" required>
+              <button type="button" id="toggleSmtpPass" class="btn-toggle-pass"><i class="fa-solid fa-eye"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="smtpSenderEmail">Sender Email Address</label>
+            <input type="email" id="smtpSenderEmail" value="krishnarohith417@gmail.com" placeholder="krishnarohith417@gmail.com">
+          </div>
+          <div class="form-group">
+            <label for="smtpDefaultRecipient">Default Recipient Email</label>
+            <input type="email" id="smtpDefaultRecipient" value="krishnarohith417@gmail.com" placeholder="krishnarohith417@gmail.com">
+          </div>
+        </div>
+
+        <div class="smtp-test-area">
+          <button type="button" class="btn-secondary" id="sendTestEmailBtn">
+            <i class="fa-solid fa-vial"></i> Send Test Email
+          </button>
+          <span class="test-result-msg" id="testResultMsg"></span>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="cancelSmtpModal">Cancel</button>
+          <button type="submit" class="btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save SMTP Credentials</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Application JS -->
+  <script src="app.js"></script>
+</body>
+</html>
