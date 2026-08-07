@@ -1,7 +1,6 @@
 const nodemailer = require('nodemailer');
 
 module.exports = async (req, res) => {
-  // Set CORS Headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -15,7 +14,12 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { host, port, user, pass, recipient, subject, body } = req.body || {};
+    let bodyData = req.body || {};
+    if (typeof bodyData === 'string') {
+      try { bodyData = JSON.parse(bodyData); } catch (e) {}
+    }
+
+    const { host, port, user, pass, recipient, subject, body } = bodyData;
 
     const smtpHost = host || process.env.SMTP_HOST || 'smtp.gmail.com';
     const smtpPort = parseInt(port || process.env.SMTP_PORT || 587);
