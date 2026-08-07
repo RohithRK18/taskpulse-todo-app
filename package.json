@@ -1,16 +1,8 @@
 {
-  "name": "todo-calendar-smtp",
+  "name": "taskpulse-todo-calendar-smtp",
   "version": "1.0.0",
   "description": "Interactive Todo Application with Calendar Assignment and SMTP Email Reminders",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
-  },
   "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.19.2",
-    "node-cron": "^3.0.3",
     "nodemailer": "^6.9.13"
   }
 }
